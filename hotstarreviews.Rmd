@@ -1,0 +1,55 @@
+---
+title: "hotstar"
+author: "Sudarshan Mishra"
+date: "September 3, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tm)
+library(wordcloud)
+library(dplyr)
+library(RWeka)
+library(stringr)
+library(rgl)
+library(lsa)
+library(randomForest)
+library(topicmodels)
+library(tidytext)
+library(rpart)
+library(Metrics)
+```
+
+```{r}
+hotstar=read.csv("E:/Machine Learning/datasets/hotstar.allreviews_Sentiments.csv")
+```
+
+```{r}
+docs=VCorpus(VectorSource(as.character(hotstar$Reviews)))
+apply_regex=function(s) {return(gsub('[^a-z ]','',s))}
+common_stopwords=stopwords()
+custom_stopwords=c('set','can','get','will','using','used','given','now','use','however')
+all_stop_words=append(common_stopwords,custom_stopwords)
+docs=tm_map(docs,content_transformer(tolower))
+docs=tm_map(docs,content_transformer(apply_regex))
+docs=tm_map(docs,stripWhitespace)
+docs=tm_map(docs,removeWords,all_stop_words)
+dtm=DocumentTermMatrix(docs)
+df_dtm=as.data.frame(as.matrix(dtm))
+dim(df_dtm)
+```
+
+
+```{r}
+#View(hotstar%>%select(Reviews,Sentiment_Manual))
+df_dtm$sentiment=hotstar$Sentiment_Manual
+train=df_dtm[1:3000,]
+dim(train)
+test=df_dtm[3001:nrow(df_dtm),]
+model=rpart(sentiment~.,data = train)
+pred=predict(model,test,type="class")
+length(pred)
+accuracy(df_dtm$sentiment,pred)
+```
+
